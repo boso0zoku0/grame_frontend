@@ -1,6 +1,6 @@
 
 export default function Home() {
   return (
-    <div>wq</div>
+    <div>Home</div>
   );
 }
