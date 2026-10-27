@@ -17,8 +17,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "clsx": "^2.1.1",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
+    "sass": "^1.106.1",
     "typescript": "^5"
   }
 }

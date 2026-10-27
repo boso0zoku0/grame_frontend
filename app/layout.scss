@@ -1,0 +1,10 @@
+.body-styles {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  @media (min-width: 768px) {
+    .body-styles {
+      font-size: 20px;
+    }
+  }
+}

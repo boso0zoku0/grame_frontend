@@ -1,9 +1,9 @@
-import "./globals.css";
-
+import "./globals.scss";
+import './layout.scss'
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body className='body-styles'>{children}</body>
     </html>
   );
 }
