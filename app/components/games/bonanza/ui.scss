@@ -1,0 +1,25 @@
+.bonanza {
+  display: grid;
+  width: 100%;
+  height: calc(100vh - var(--top-bar-height));
+  grid-template-columns: 1fr;
+  grid-template-rows: 90% 10%;
+  grid-template-areas: "slot"
+                       "tab";
+  overflow: hidden;
+  background-color: #361a31;
+  //padding: 20px;
+
+}
+.slot-b {
+  grid-area: slot;
+  width: 100%;
+  height: 100%;
+}
+
+.tab-b {
+  display: block;
+  grid-area: tab;
+  width: 100%;
+  height: 100%;
+}

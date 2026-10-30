@@ -1,28 +1,33 @@
 
 :root {
-  --background-white: #ffffff;
-  --background-black: #171717;
+  --background-white: rgba(1, 8, 33, 0.79);
+  --background-black: rgba(220, 206, 206, 0.34);
+  --base-padd: 9px;
+  --base-gap: 10px;
+  // components
+  --top-bar-height: 50px;
 }
 
 
 body {
-  background-color: var(--background-white);
-  color: var(--background-black);
   font-family: Roboto, Arial, sans-serif;
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 400;
+  background-color: var(--background-white);
+  color: gray;
   margin: 0;
-  @media (max-width: 768px) {
-    body {
-      font-size: 16px;
+  @media (min-width: 768px) {
+    .body-styles {
+      font-size: 18px;
     }
-  }
-}
+}}
+
 
 button,
 input,
 textarea,
-select {
+select,
+a {
   font: inherit; // наследовать шрифт от родителя
 }
 
@@ -48,4 +53,12 @@ input {
 textarea {
   border: none;
   outline: none;
+}
+a {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a:visited {
+  color: inherit;
 }

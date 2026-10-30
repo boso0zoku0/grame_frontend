@@ -1,0 +1,22 @@
+.games-g {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 200px);
+  grid-auto-rows: 150px;
+  width: 100%;
+  min-height: 100vh;
+  gap: var(--base-gap);
+  padding: 20px;
+
+  .game-g {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(183, 169, 169, 0.79);
+    color: rgb(225, 164, 239);
+
+    .game-name-g {
+    }
+  }
+}

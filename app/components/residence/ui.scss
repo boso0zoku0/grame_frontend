@@ -1,0 +1,21 @@
+.residence {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  .child-r {
+    width: 30%;
+    height: 20%;
+    background-color: #5c5263;
+  }
+  .canvas-res {
+    //сколько места канвас занимает на экране
+    // если буфер больше css величины, то картинка четче но меньше деталей
+    // если буфер меньше css величины, то картинка растянутая и в мыле
+    width: 111px;
+    height: 111px;
+  }
+}
