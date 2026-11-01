@@ -17,7 +17,7 @@ export function setupCanvas(canvas, drawFn) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-
+  console.log('1111')
   const resize = () => {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -34,8 +34,7 @@ export function setupCanvas(canvas, drawFn) {
       canvas.height = bufferHeight;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-
-    drawFn(ctx, width, height);   // ← рисуем с CSS-размерами
+    drawFn(ctx, width, height);
   };
 
   resize();   // первый вызов

@@ -1,14 +1,48 @@
 'use client'
 import './ui.scss'
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {setupCanvas} from "@/app/helpers/canvas";
+import tabPanelCoord from "@/app/components/games/bonanza/coordinates";
 
 
 export default function Bonanza() {
   const slotRef = useRef<HTMLCanvasElement | null>(null);
   const tabRef = useRef<HTMLCanvasElement | null>(null);
+  const buttonsRef = useRef<CanvasButton[]>([])
+  const dotDownPath = useRef<Path2D | null>(null)
+  const dotUpPath = useRef<Path2D | null>(null)
+  const dotDownMinusPath = useRef<Path2D | null>(null)
+  const dotUpPlusPath = useRef<Path2D | null>(null)
   const isSignScale = useRef(false)
-  const [money, setMoney] = useState(100)
+  const money = useRef(100)
+
+  interface CanvasButton {
+    path: Path2D
+    defaultColor: string
+    hoverColor: string
+    isHovered: boolean
+    onClick?: () => void
+    draw: (ctx: CanvasRenderingContext2D) => void
+  }
+
+  function createButton(
+    path: Path2D,
+    defaultColor: string,
+    hoverColor: string,
+    onClick?: () => void
+  ): CanvasButton {
+    return {
+      path,
+      defaultColor,
+      hoverColor,
+      isHovered: false,
+      onClick,
+      draw(ctx) {
+        ctx.fillStyle = this.isHovered ? this.hoverColor : this.defaultColor
+        ctx.fill(this.path)
+      },
+    }
+  }
 
 
   useEffect(() => {
@@ -18,233 +52,249 @@ export default function Bonanza() {
       ctx.fillRect(0, 0, w, h);
     });
   }, []);
-  useEffect(() => {
-    return setupCanvas(tabRef.current, (ctx, w, h) => {
-      const xL = 0
-      const xC = w / 2
-      const xR = w
-      const yT = 0
-      const yC = h / 2
-      const yB = h
-      ctx.clearRect(0, 0, w, h);
-      ctx.beginPath()
-      const gradient = ctx.createLinearGradient(0, 0, 0, yB)
-      gradient.addColorStop(0, '#96318a')
-      gradient.addColorStop(0.8, '#4b2343')
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, w, h);
-      // panel
-      const paddingBetPanelX = 150
-      const paddingBetPanelY = 10
-      const betPanelW = 150
-      const betPanelXL = paddingBetPanelX
-      const betPanelXC = betPanelW / 2 + paddingBetPanelX
-      const betPanelXR = betPanelW + paddingBetPanelX
 
-      const betPanelH = yB - (paddingBetPanelY * 2)
-      const betPanelYT = paddingBetPanelY
-      const betPanelYC = betPanelYT + betPanelH / 2
-      const betPanelYB = yB - paddingBetPanelY
+  const drawFn = useCallback((ctx, w, h) => {
+    const c = tabPanelCoord(w, h)
+
+    if (!tabRef.current) {
+      return;
+    }
+    if (!ctx) {
+      return;
+    }
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.beginPath()
+    const gradient = ctx.createLinearGradient(0, 0, 0, c.tabYB)
+    gradient.addColorStop(0, '#96318a')
+    gradient.addColorStop(0.8, '#4b2343')
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
+    const dotDown = dotDownBuild()
+    const dotDownMinus = dotDownMinusBuild()
+    const dotUp = dotUpBuild()
+    const dotUpPlus = dotUpPlusBuild()
+    dotDownPath.current = dotDown
+    dotUpPath.current = dotUp
+    dotDownMinusPath.current = dotDownMinus
+    dotUpPlusPath.current = dotUpPlus
+    dotDownDraw(dotDown, c.defaultColorTabDots)
+    dotUpDraw(dotUp, c.defaultColorTabDots)
+    dotDownMinusDraw(dotDownMinus)
+    dotUpPlusDraw(dotUpPlus)
 
 
-      const round = 22
+    ctx.beginPath()
+    ctx.moveTo(c.betPanelXL + c.round, c.betPanelYT)
+    ctx.lineTo(c.betPanelXL + c.betPanelW - c.round, c.betPanelYT)
+    ctx.arcTo(c.betPanelXL + c.betPanelW, c.betPanelYT, c.betPanelXL + c.betPanelW, c.betPanelYT + c.round, c.round)
+    ctx.lineTo(c.betPanelXL + c.betPanelW, c.betPanelYT + c.betPanelH - c.round)
+    ctx.arcTo(c.betPanelXL + c.betPanelW, c.betPanelYT + c.betPanelH, c.betPanelXL + c.betPanelW - c.round, c.betPanelYT + c.betPanelH, c.round)
+    ctx.lineTo(c.betPanelXL + c.round, c.betPanelYT + c.betPanelH)
+    ctx.arcTo(c.betPanelXL, c.betPanelYT + c.betPanelH, c.betPanelXL, c.betPanelYT + c.betPanelH - c.round, c.round)
+    ctx.lineTo(c.betPanelXL, c.betPanelYT + c.round)
+    ctx.arcTo(c.betPanelXL, c.betPanelYT, c.betPanelXL + c.round, c.betPanelYT, c.round)
 
-      ctx.beginPath()
-      ctx.moveTo(betPanelXL + round, betPanelYT)
-      ctx.lineTo(betPanelXL + betPanelW - round, betPanelYT)
-      ctx.arcTo(betPanelXL + betPanelW, betPanelYT, betPanelXL + betPanelW, betPanelYT + round, round)
-      ctx.lineTo(betPanelXL + betPanelW, betPanelYT + betPanelH - round)
-      ctx.arcTo(betPanelXL + betPanelW, betPanelYT + betPanelH, betPanelXL + betPanelW - round, betPanelYT + betPanelH, round)
-      ctx.lineTo(betPanelXL + round, betPanelYT + betPanelH)
-      ctx.arcTo(betPanelXL, betPanelYT + betPanelH, betPanelXL, betPanelYT + betPanelH - round, round)
-      ctx.lineTo(betPanelXL, betPanelYT + round)
-      ctx.arcTo(betPanelXL, betPanelYT, betPanelXL + round, betPanelYT, round)
+    const panelGradient = ctx.createLinearGradient(
+      c.betPanelXC, c.betPanelYT,
+      c.betPanelXC, c.betPanelYB
+    )
+    panelGradient.addColorStop(0, '#85257c')
+    panelGradient.addColorStop(0.8, '#4f1048')
 
-      const panelGradient = ctx.createLinearGradient(
-        betPanelXC, betPanelYT,
-        betPanelXC, betPanelYB
-      )
-      panelGradient.addColorStop(0, '#85257c')
-      panelGradient.addColorStop(0.8, '#4f1048')
+    ctx.fillStyle = panelGradient
+    ctx.fill()
 
-      ctx.fillStyle = panelGradient
-      ctx.fill()
+    ctx.save()
+    ctx.clip()
+    const shadowSize = 44
+    const topShadow = ctx.createLinearGradient(0, c.betPanelYT, 0, c.betPanelYT + shadowSize)
+    topShadow.addColorStop(0, '#330a30')
+    topShadow.addColorStop(0.8, 'rgba(0, 0, 0, 0)')
+    // bet panel
+    ctx.fillStyle = topShadow
+    ctx.fillRect(c.betPanelXL, c.betPanelYT, c.betPanelW, shadowSize)
+    const bottomShadow = ctx.createLinearGradient(0, c.betPanelYB, 0, c.betPanelYB - shadowSize)
+    bottomShadow.addColorStop(0, '#330a30')
+    bottomShadow.addColorStop(0.8, 'rgba(0, 0, 0, 0)')
+    ctx.fillStyle = bottomShadow
+    ctx.fillRect(c.betPanelXL, c.betPanelYB - shadowSize, c.betPanelW, shadowSize)
+    const leftShadow = ctx.createLinearGradient(c.betPanelXL, 0, c.betPanelXL + shadowSize, 0)
+    leftShadow.addColorStop(0, '#330a30')
+    leftShadow.addColorStop(0.8, 'rgba(0, 0, 0, 0)')
+    ctx.fillStyle = leftShadow
+    ctx.fillRect(c.betPanelXL, c.betPanelYT, shadowSize, c.betPanelH)
+    const rightShadow = ctx.createLinearGradient(c.betPanelXR, 0, c.betPanelXR - shadowSize, 0)
+    rightShadow.addColorStop(0, '#330a30')
+    rightShadow.addColorStop(0.8, 'rgba(0, 0, 0, 0)')
+    ctx.fillStyle = rightShadow
+    ctx.fillRect(c.betPanelXR - shadowSize, c.betPanelYT, shadowSize, c.betPanelH)
+    ctx.restore()
 
-      ctx.save()
-      ctx.clip()
-      const shadowSize = 44
-      const topShadow = ctx.createLinearGradient(0, betPanelYT, 0, betPanelYT + shadowSize)
-      topShadow.addColorStop(0, '#330a30')
-      topShadow.addColorStop(0.8, 'rgba(0, 0, 0, 0)')
-      // bet panel
-      ctx.fillStyle = topShadow
-      ctx.fillRect(betPanelXL, betPanelYT, betPanelW, shadowSize)
-      const bottomShadow = ctx.createLinearGradient(0, betPanelYB, 0, betPanelYB - shadowSize)
-      bottomShadow.addColorStop(0, '#330a30')
-      bottomShadow.addColorStop(0.8, 'rgba(0, 0, 0, 0)')
-      ctx.fillStyle = bottomShadow
-      ctx.fillRect(betPanelXL, betPanelYB - shadowSize, betPanelW, shadowSize)
-      const leftShadow = ctx.createLinearGradient(betPanelXL, 0, betPanelXL + shadowSize, 0)
-      leftShadow.addColorStop(0, '#330a30')
-      leftShadow.addColorStop(0.8, 'rgba(0, 0, 0, 0)')
-      ctx.fillStyle = leftShadow
-      ctx.fillRect(betPanelXL, betPanelYT, shadowSize, betPanelH)
-      const rightShadow = ctx.createLinearGradient(betPanelXR, 0, betPanelXR - shadowSize, 0)
-      rightShadow.addColorStop(0, '#330a30')
-      rightShadow.addColorStop(0.8, 'rgba(0, 0, 0, 0)')
-      ctx.fillStyle = rightShadow
-      ctx.fillRect(betPanelXR - shadowSize, betPanelYT, shadowSize, betPanelH)
-      ctx.restore()
+    ctx.font = '30px Arial'
+    ctx.fillStyle = '#e8ab47'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.moveTo(c.betPanelXC, c.betPanelYC)
+    ctx.fillText(money.current, c.betPanelXC, c.betPanelYC)
 
-      ctx.font = '30px Arial'
-      ctx.fillStyle = '#e8ab47'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.moveTo(betPanelXC, betPanelYC)
-      ctx.fillText(money, betPanelXC, betPanelYC)
-      // dots
-      const betPanelDotW = 35
-      const betPanelDotH = yB - (paddingBetPanelY * 2)
-      const paddbetweenPanel = 5
+    function dotDownBuild(): Path2D {
+      const p = new Path2D()
+      p.moveTo(c.betPanelDotDownXR - c.roundDots, c.betPanelDotDownYT)
+      p.lineTo(c.betPanelDotDownXR - c.roundDots, c.betPanelDotDownYT)
+      p.arcTo(c.betPanelDotDownXR, c.betPanelYT, c.betPanelDotDownXR, c.betPanelDotDownYB, c.roundDots)
+      p.lineTo(c.betPanelDotDownXR, c.betPanelYB - c.roundDots)
+      p.arcTo(c.betPanelDotDownXR, c.betPanelYB, c.betPanelDotDownXC, c.betPanelDotDownYB, c.roundDots)
+      p.lineTo(c.betPanelDotDownXC + c.roundDots, c.betPanelYB)
+      p.arcTo(c.betPanelDotDownXC, c.betPanelYB, c.betPanelDotDownXL, c.betPanelDotDownYC, c.roundDots)
+      p.lineTo(c.betPanelDotDownXL, c.betPanelDotDownYC)
+      p.arcTo(c.betPanelDotDownXL, c.betPanelDotDownYC - c.roundDots, c.betPanelDotDownXR, c.betPanelDotDownYT, c.roundDots)
+      p.lineTo(c.betPanelDotDownXC, c.betPanelDotDownYT)
+      p.closePath()
+      return p
+    }
 
-      const betPanelDotDownXL = paddingBetPanelX - betPanelDotW - paddbetweenPanel
-      const betPanelDotDownXC = paddingBetPanelX - (betPanelDotW / 2) - paddbetweenPanel
-      const betPanelDotDownXR = paddingBetPanelX - paddbetweenPanel
-      const betPanelDotDownYT = paddingBetPanelY
-      const betPanelDotDownYC = paddingBetPanelY + (betPanelDotH / 2)
-      const betPanelDotDownYB = betPanelDotH + paddingBetPanelY
-
-      const roundDots = 5
-
-      // dotDown
-      const defaultColor = '#330a30'
-      const onHoverColor = '#491342'
-
-      function dotDownBuild(): Path2D {
-        const dDP = new Path2D()
-        ctx.save()
-        ctx.clip()
-        dDP.moveTo(betPanelDotDownXR - roundDots, betPanelDotDownYT)
-        dDP.lineTo(betPanelDotDownXR - roundDots, betPanelDotDownYT)
-        dDP.arcTo(betPanelDotDownXR, betPanelYT, betPanelDotDownXR, betPanelDotDownYB, roundDots)
-        dDP.lineTo(betPanelDotDownXR, betPanelYB - roundDots)
-        dDP.arcTo(betPanelDotDownXR, betPanelYB, betPanelDotDownXC, betPanelDotDownYB, roundDots)
-        dDP.lineTo(betPanelDotDownXC + roundDots, betPanelYB)
-        dDP.arcTo(betPanelDotDownXC, betPanelYB, betPanelDotDownXL, betPanelDotDownYC, roundDots)
-        dDP.lineTo(betPanelDotDownXL, betPanelDotDownYC)
-        dDP.arcTo(betPanelDotDownXL, betPanelDotDownYC - roundDots, betPanelDotDownXR, betPanelDotDownYT, roundDots)
-        dDP.lineTo(betPanelDotDownXC, betPanelDotDownYT)
-        dDP.closePath()
-        ctx.restore()
-        return dDP
+    function dotDownDraw(path: Path2D | null, color: string) {
+      if (!ctx || !path) {
+        return;
       }
+      ctx.fillStyle = color
+      ctx.strokeStyle = '#905296'
+      ctx.lineWidth = 3
+      ctx.fill(path)
+      ctx.stroke(path)
+      isSignScale.current = !isSignScale.current
 
-      function dotDownDraw(dDP: Path2D, color: string) {
-        ctx.fillStyle = color
-        ctx.lineWidth = 3
-        ctx.fill(dDP)
-        isSignScale.current = !isSignScale.current
-        dotDownMinusDraw()
+    }
 
+    function dotDownMinusBuild() {
+      const p = new Path2D()
+      p.moveTo(c.betPanelDotDownXL + 5, c.betPanelDotDownYC)
+      p.lineTo(c.betPanelDotDownXR - 5, c.betPanelDotDownYC)
+      return p
+    }
+
+    function dotDownMinusDraw(path: Path2D) {
+      ctx.strokeStyle = 'rgba(226,226,226,0.79)'
+      ctx.lineWidth = 3
+      ctx.lineCap = 'round'
+      path.closePath()
+      ctx.stroke(path)
+    }
+
+    function dotUpBuild() {
+      const p = new Path2D()
+      p.moveTo(c.betPanelDotUpXL, c.betPanelDotUpYT)
+      p.lineTo(c.betPanelDotUpXL, c.betPanelDotUpYT)
+      p.arcTo(c.betPanelDotUpXC, c.betPanelDotUpYT, c.betPanelDotUpXR, c.betPanelDotUpYC, c.roundDots)
+      p.lineTo(c.betPanelDotUpXR, c.betPanelDotUpYC - c.roundDots)
+      p.arcTo(c.betPanelDotUpXR, c.betPanelDotUpYC, c.betPanelDotUpXC, c.betPanelDotUpYB, c.roundDots)
+      p.lineTo(c.betPanelDotUpXC + c.roundDots, c.betPanelDotUpYB)
+      p.arcTo(c.betPanelDotUpXC, c.betPanelDotUpYB, c.betPanelDotUpXL, c.betPanelDotUpYB, c.roundDots)
+      p.lineTo(c.betPanelDotUpXL + c.roundDots, c.betPanelDotUpYB)
+      p.arcTo(c.betPanelDotUpXL, c.betPanelDotUpYB, c.betPanelDotUpXL, c.betPanelDotUpYT, c.roundDots)
+      p.closePath()
+      return p
+    }
+
+    function dotUpDraw(path: Path2D, color: string) {
+      ctx.fillStyle = color
+      ctx.strokeStyle = '#905296'
+      ctx.lineWidth = 3
+      ctx.fill(path)
+      ctx.stroke(path)
+    }
+
+    function dotUpPlusBuild() {
+      const p = new Path2D()
+      p.moveTo(c.betPanelDotUpXL + (c.roundDots), c.betPanelDotUpYC)
+      p.lineTo(c.betPanelDotUpXR - c.roundDots, c.betPanelDotUpYC)
+      p.moveTo(c.betPanelDotUpXC, c.betPanelDotUpYC)
+      p.lineTo(c.betPanelDotUpXC, c.betPanelDotUpYT + c.roundDots * 4)
+      p.lineTo(c.betPanelDotUpXC, c.betPanelDotUpYB - c.roundDots * 4)
+      return p
+    }
+
+    function dotUpPlusDraw(path: Path2D) {
+      ctx.strokeStyle = 'rgba(226,226,226,0.79)'
+      ctx.lineWidth = 3
+      ctx.stroke(path)
+    }
+
+    const upPath = dotUpBuild()
+    const downPath = dotDownBuild()
+    if (!upPath || !downPath) return
+
+    // buttonsRef.current = [
+    //   createButton(upPath, c.defaultColorTabDots, c.onHoverColorTabDots, () => setMoney(m => m + 10)),
+    //   createButton(downPath, c.defaultColorTabDots, c.onHoverColorTabDots, () => setMoney(m => m - 10)),
+    // ]
+
+    if (!tabRef.current) {
+      return
+    }
+    const handleMouseMoveDots = (e: MouseEvent) => {
+      if (!tabRef.current || !dotDownPath.current || !dotUpPath.current) {
+        return
       }
+      const btnDown = tabRef.current.getBoundingClientRect()
+      const currX = e.clientX - btnDown.left
+      const currY = e.clientY - btnDown.top
+      // const isDotDownHover = ctx.isPointInPath(dotDownPath.current, currX, currY)
+      // const isDotUpHover = ctx.isPointInPath(dotUpPath.current, currX, currY)
 
-      function dotDownMinusDraw() {
-        // minus
-        const dDMP = new Path2D()
-        dDMP.moveTo(betPanelDotDownXL + 5, betPanelDotDownYC)
-        dDMP.lineTo(betPanelDotDownXR - 5, betPanelDotDownYC)
-        ctx.strokeStyle = 'rgba(226,226,226,0.79)'
-        ctx.lineWidth = 3
-        ctx.lineCap = 'round'
-        dDMP.closePath()
-        ctx.stroke(dDMP)
+      if (ctx.isPointInPath(dotDownPath.current, currX, currY)) {
+        dotDownDraw(dotDownPath.current, c.onHoverColorTabDots)
+        dotDownMinusDraw(dotDownMinus)
+
+      } else {
+        dotDownDraw(dotDownPath.current, c.defaultColorTabDots)
+        dotDownMinusDraw(dotDownMinus)
       }
+      if (ctx.isPointInPath(dotUpPath.current, currX, currY)) {
+        dotUpDraw(dotUpPath.current, c.onHoverColorTabDots)
+        dotUpPlusDraw(dotUpPlus)
 
+      } else {
+        dotUpDraw(dotUpPath.current, c.defaultColorTabDots)
+        dotUpPlusDraw(dotUpPlus)
+      }
+    }
 
-      const dDP = dotDownBuild()
-      dotDownDraw(dDP, defaultColor)
-
+    const handleClickDots = (e: MouseEvent) => {
       if (!tabRef.current) {
         return
       }
-      tabRef.current.addEventListener('mousemove', (e) => {
-        if (!tabRef.current) {
-          return
-        }
-        const dDP = dotDownBuild()
-        const btnDown = tabRef.current.getBoundingClientRect()
-        const currX = e.clientX - btnDown.left
-        const currY = e.clientY - btnDown.top
+      const btnDown = tabRef.current.getBoundingClientRect()
+      const currX = e.clientX - btnDown.left
+      const currY = e.clientY - btnDown.top
+      const isDotDownActive = ctx.isPointInPath(dotDownPath.current, currX, currY)
+      const isDotUpActive = ctx.isPointInPath(dotUpPath.current, currX, currY)
 
-        if (ctx.isPointInPath(dDP, currX, currY)) {
-          dotDownDraw(dDP, onHoverColor)
+      if (isDotDownActive) {
+        money.current = money.current - 100
+      }
+      if (isDotUpActive) {
+        money.current = money.current + 100
+      }
+      console.log(money.current)
+    }
 
-        } else {
-          dotDownDraw(dDP, defaultColor)
-        }
-      })
-      tabRef.current.addEventListener('click', (e) => {
-        if (!tabRef.current) {
-          return
-        }
-        const dDP = dotDownBuild()
-        const btnDown = tabRef.current.getBoundingClientRect()
-        const currX = e.clientX - btnDown.left
-        const currY = e.clientY - btnDown.top
+    tabRef.current.addEventListener('click', handleClickDots)
+    tabRef.current.addEventListener('mousemove', handleMouseMoveDots)
+    return () => {
+      if (!tabRef.current) {
+        return
+      }
+      tabRef.current.removeEventListener('click', handleClickDots);
+      tabRef.current.removeEventListener('mousemove', handleMouseMoveDots)
+    }
 
-        if (ctx.isPointInPath(dDP, currX, currY)) {
-          setMoney(prev => prev + 10)
-        } else {
-          // проверяем «минус»
-          const dDMP = new Path2D()
-          dDMP.moveTo(betPanelDotDownXL + 5, betPanelDotDownYC)
-          dDMP.lineTo(betPanelDotDownXR - 5, betPanelDotDownYC)
-          if (ctx.isPointInStroke(dDMP, currX, currY)) {
-            setMoney(prev => prev - 10)
-          }
-        }
-      })
-      //dotUp
-      const betPanelDotUpXL = betPanelXR + paddbetweenPanel
-      const betPanelDotUpXC = betPanelXR + paddbetweenPanel + (betPanelDotW / 2)
-      const betPanelDotUpXR = betPanelXR + paddbetweenPanel + betPanelDotW
-      const betPanelDotUpYT = paddingBetPanelY
-      const betPanelDotUpYC = paddingBetPanelY + (betPanelDotH / 2)
-      const betPanelDotUpYB = betPanelDotH + paddingBetPanelY
+  }, [money.current])
 
-      ctx.beginPath()
-      ctx.moveTo(betPanelDotUpXL, betPanelDotUpYT)
-      ctx.lineTo(betPanelDotUpXL, betPanelDotUpYT)
-      ctx.arcTo(betPanelDotUpXC, betPanelDotUpYT, betPanelDotUpXR, betPanelDotUpYC, roundDots)
-      ctx.lineTo(betPanelDotUpXR, betPanelDotUpYC - roundDots)
-      ctx.arcTo(betPanelDotUpXR, betPanelDotUpYC, betPanelDotUpXC, betPanelDotUpYB, roundDots)
-      ctx.lineTo(betPanelDotUpXC + roundDots, betPanelDotUpYB)
-      ctx.arcTo(betPanelDotUpXC, betPanelDotUpYB, betPanelDotUpXL, betPanelDotUpYB, roundDots)
-      ctx.lineTo(betPanelDotUpXL + roundDots, betPanelDotUpYB)
-      ctx.arcTo(betPanelDotUpXL, betPanelDotUpYB, betPanelDotUpXL, betPanelDotUpYT, roundDots)
-      ctx.closePath()
-      ctx.strokeStyle = 'rgba(8,8,21,0.94)'
-      ctx.lineWidth = 3
-      ctx.stroke()
-      // plus
-      ctx.save()
-      // фигура не симметрична, поэтому пришлось смещать координату чтобы визуально в центре + был
-      ctx.translate(-1, 0)
-      ctx.beginPath()
-      ctx.moveTo(betPanelDotUpXL + roundDots, betPanelDotUpYC)
-      ctx.lineTo(betPanelDotUpXR - roundDots, betPanelDotUpYC)
-      ctx.moveTo(betPanelDotUpXC, betPanelDotUpYC)
-      ctx.lineTo(betPanelDotUpXC, betPanelDotUpYT + roundDots * 4)
-      ctx.lineTo(betPanelDotUpXC, betPanelDotUpYB - roundDots * 4)
-      ctx.strokeStyle = 'rgba(226,226,226,0.79)'
-      ctx.lineWidth = 3
-      ctx.stroke()
-      ctx.restore()
-
-
-    });
-  }, []);
-
+  useEffect(() => {
+    return setupCanvas(tabRef.current, drawFn)
+  }, [])
 
   return (
     <div className='bonanza'>
