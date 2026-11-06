@@ -1,48 +1,25 @@
 'use client'
 import './ui.scss'
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {RefObject, useCallback, useEffect, useRef, useState} from "react";
 import {setupCanvas} from "@/app/helpers/canvas";
-import tabPanelCoord from "@/app/components/games/bonanza/coordinates";
-
+import tabPanelCoord, {TabPanelProps} from "@/app/components/games/bonanza/coordinates";
+import {
+  dotDownBuild,
+  dotDownDraw, dotDownMinusBuild,
+  dotDownMinusDraw, dotUpBuild,
+  dotUpDraw, dotUpPlusBuild,
+  dotUpPlusDraw
+} from "@/app/components/games/bonanza/utils";
 
 export default function Bonanza() {
   const slotRef = useRef<HTMLCanvasElement | null>(null);
   const tabRef = useRef<HTMLCanvasElement | null>(null);
-  const buttonsRef = useRef<CanvasButton[]>([])
   const dotDownPath = useRef<Path2D | null>(null)
   const dotUpPath = useRef<Path2D | null>(null)
   const dotDownMinusPath = useRef<Path2D | null>(null)
   const dotUpPlusPath = useRef<Path2D | null>(null)
-  const isSignScale = useRef(false)
   const money = useRef(100)
-
-  interface CanvasButton {
-    path: Path2D
-    defaultColor: string
-    hoverColor: string
-    isHovered: boolean
-    onClick?: () => void
-    draw: (ctx: CanvasRenderingContext2D) => void
-  }
-
-  function createButton(
-    path: Path2D,
-    defaultColor: string,
-    hoverColor: string,
-    onClick?: () => void
-  ): CanvasButton {
-    return {
-      path,
-      defaultColor,
-      hoverColor,
-      isHovered: false,
-      onClick,
-      draw(ctx) {
-        ctx.fillStyle = this.isHovered ? this.hoverColor : this.defaultColor
-        ctx.fill(this.path)
-      },
-    }
-  }
+  const [isRefresh, setRefresh] = useState(false)
 
 
   useEffect(() => {
@@ -70,18 +47,6 @@ export default function Bonanza() {
     gradient.addColorStop(0.8, '#4b2343')
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
-    const dotDown = dotDownBuild()
-    const dotDownMinus = dotDownMinusBuild()
-    const dotUp = dotUpBuild()
-    const dotUpPlus = dotUpPlusBuild()
-    dotDownPath.current = dotDown
-    dotUpPath.current = dotUp
-    dotDownMinusPath.current = dotDownMinus
-    dotUpPlusPath.current = dotUpPlus
-    dotDownDraw(dotDown, c.defaultColorTabDots)
-    dotUpDraw(dotUp, c.defaultColorTabDots)
-    dotDownMinusDraw(dotDownMinus)
-    dotUpPlusDraw(dotUpPlus)
 
 
     ctx.beginPath()
@@ -104,6 +69,19 @@ export default function Bonanza() {
 
     ctx.fillStyle = panelGradient
     ctx.fill()
+    const dotDown = dotDownBuild(c)
+    const dotDownMinus = dotDownMinusBuild(c)
+    const dotUp = dotUpBuild(c)
+    const dotUpPlus = dotUpPlusBuild(c)
+    dotDownPath.current = dotDown
+    dotUpPath.current = dotUp
+    dotDownMinusPath.current = dotDownMinus
+    dotUpPlusPath.current = dotUpPlus
+    dotDownDraw(ctx, dotDown, c.defaultColorTabDots)
+    dotUpDraw(ctx, dotUp, c.defaultColorTabDots)
+    dotDownMinusDraw(ctx, dotDownMinus)
+    dotUpPlusDraw(ctx, dotUpPlus)
+
 
     ctx.save()
     ctx.clip()
@@ -135,104 +113,148 @@ export default function Bonanza() {
     ctx.fillStyle = '#e8ab47'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.moveTo(c.betPanelXC, c.betPanelYC)
     ctx.fillText(money.current, c.betPanelXC, c.betPanelYC)
 
-    function dotDownBuild(): Path2D {
-      const p = new Path2D()
-      p.moveTo(c.betPanelDotDownXR - c.roundDots, c.betPanelDotDownYT)
-      p.lineTo(c.betPanelDotDownXR - c.roundDots, c.betPanelDotDownYT)
-      p.arcTo(c.betPanelDotDownXR, c.betPanelYT, c.betPanelDotDownXR, c.betPanelDotDownYB, c.roundDots)
-      p.lineTo(c.betPanelDotDownXR, c.betPanelYB - c.roundDots)
-      p.arcTo(c.betPanelDotDownXR, c.betPanelYB, c.betPanelDotDownXC, c.betPanelDotDownYB, c.roundDots)
-      p.lineTo(c.betPanelDotDownXC + c.roundDots, c.betPanelYB)
-      p.arcTo(c.betPanelDotDownXC, c.betPanelYB, c.betPanelDotDownXL, c.betPanelDotDownYC, c.roundDots)
-      p.lineTo(c.betPanelDotDownXL, c.betPanelDotDownYC)
-      p.arcTo(c.betPanelDotDownXL, c.betPanelDotDownYC - c.roundDots, c.betPanelDotDownXR, c.betPanelDotDownYT, c.roundDots)
-      p.lineTo(c.betPanelDotDownXC, c.betPanelDotDownYT)
-      p.closePath()
-      return p
-    }
+    ctx.font = 'bold 20px Arial'
+    ctx.fillStyle = '#d734bd'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('BET', c.betPanelXC, c.betPanelYB)
+    //
+    const tabWinW = (c.tabXR / 3) - (c.paddingBetPanelY * 2)
+    const tabWinH = c.tabYB - c.paddingBetPanelY + 3
+    const tabWinXL = c.tabXR / 3
+    const tabWinXC = (c.tabXR / 3) + (tabWinW / 2)
+    const tabWinXR = (c.tabXR / 3) + tabWinW
+    const tabWinYT = c.tabYT + c.paddingBetPanelY
+    const tabWinYB = c.tabYB - 9
+    const tabWinYC = c.tabYC
+    // тут описывал корону которая сверх будет
+    const topCoronaW = 35
+    const topCoronaXL = tabWinXC - topCoronaW
+    const topCoronaXC = tabWinXC
+    const topCoronaXR = tabWinXC + topCoronaW
+    const topCoronaYT = tabWinYT - topCoronaW
+    const topCoronaYC = tabWinYT
+    const topCoronaYB = tabWinYT + topCoronaW
+    //
+    const padC = 3
+    const coronaH = (c.tabYB / 3) - (padC * 2)
+    const coronaW = 25
+    const outShapePadd = 1
 
-    function dotDownDraw(path: Path2D | null, color: string) {
-      if (!ctx || !path) {
-        return;
-      }
-      ctx.fillStyle = color
-      ctx.strokeStyle = '#905296'
-      ctx.lineWidth = 3
-      ctx.fill(path)
-      ctx.stroke(path)
-      isSignScale.current = !isSignScale.current
 
-    }
+    //
+    const outShapeXL = tabWinXL - (coronaW / 2)
+    const outShapeXR = tabWinXL + (coronaW / 2)
+    const outShapeXC = (outShapeXL + outShapeXR) / 2
+    const outShapeYT = c.tabYC - (coronaH / 2) - outShapePadd
+    const outShapeYC = c.tabYC
+    const outShapeYB = c.tabYC + (coronaH / 2) + outShapePadd
+    // outline shape
+    const olsPadHigh = 7
+    const olsPadMid = 4
+    const olsXL = outShapeXL - olsPadMid
+    const olsXR = tabWinXL
+    const olsYT = outShapeYT - olsPadHigh
+    const olsYC = outShapeYC
+    const olsYB = outShapeYB + olsPadHigh
 
-    function dotDownMinusBuild() {
-      const p = new Path2D()
-      p.moveTo(c.betPanelDotDownXL + 5, c.betPanelDotDownYC)
-      p.lineTo(c.betPanelDotDownXR - 5, c.betPanelDotDownYC)
-      return p
-    }
 
-    function dotDownMinusDraw(path: Path2D) {
-      ctx.strokeStyle = 'rgba(226,226,226,0.79)'
-      ctx.lineWidth = 3
-      ctx.lineCap = 'round'
-      path.closePath()
-      ctx.stroke(path)
-    }
+    const liftCor = outShapeYT - outShapeYC
+    const outShapeW = outShapeXR
+    const outShapeH = outShapeYB
+    //
+    const l = (x, y) => ctx.lineTo(x, y)
+    // panel
+    ctx.beginPath()
+    ctx.moveTo(tabWinXL+10, tabWinYT)
+    ctx.arcTo(tabWinXR, tabWinYT, tabWinXR, tabWinYB, 10)
+    ctx.arcTo(tabWinXR, tabWinYB, tabWinXL, tabWinYB, 10)
+    ctx.arcTo(tabWinXL, tabWinYB, tabWinXL, tabWinYT, 10)
+    ctx.arcTo(tabWinXL, tabWinYT, tabWinXL+10, tabWinYT, 10)
+    // ctx.moveTo(tabWinXL, tabWinYT)
+    // ctx.lineTo(tabWinXL, tabWinYC - 20)
 
-    function dotUpBuild() {
-      const p = new Path2D()
-      p.moveTo(c.betPanelDotUpXL, c.betPanelDotUpYT)
-      p.lineTo(c.betPanelDotUpXL, c.betPanelDotUpYT)
-      p.arcTo(c.betPanelDotUpXC, c.betPanelDotUpYT, c.betPanelDotUpXR, c.betPanelDotUpYC, c.roundDots)
-      p.lineTo(c.betPanelDotUpXR, c.betPanelDotUpYC - c.roundDots)
-      p.arcTo(c.betPanelDotUpXR, c.betPanelDotUpYC, c.betPanelDotUpXC, c.betPanelDotUpYB, c.roundDots)
-      p.lineTo(c.betPanelDotUpXC + c.roundDots, c.betPanelDotUpYB)
-      p.arcTo(c.betPanelDotUpXC, c.betPanelDotUpYB, c.betPanelDotUpXL, c.betPanelDotUpYB, c.roundDots)
-      p.lineTo(c.betPanelDotUpXL + c.roundDots, c.betPanelDotUpYB)
-      p.arcTo(c.betPanelDotUpXL, c.betPanelDotUpYB, c.betPanelDotUpXL, c.betPanelDotUpYT, c.roundDots)
-      p.closePath()
-      return p
-    }
+    // glowCircleXL
+    ctx.save()
+    ctx.scale(1, 2);
+    const gCXL = (tabWinXL + tabWinXC) / 2
+    const gCXR = (tabWinXR + tabWinXC) / 2
+    const gCXC = (gCXL + gCXR) / 2
+    const gCYC = tabWinYB + 400
+    const gCRadius = (outShapeXR - outShapeXL) * 22;
+    const panelWinGradient = ctx.createRadialGradient(
+      gCXC, gCYC, 0,
+      gCXC, gCYC, gCRadius
+    )
 
-    function dotUpDraw(path: Path2D, color: string) {
-      ctx.fillStyle = color
-      ctx.strokeStyle = '#905296'
-      ctx.lineWidth = 3
-      ctx.fill(path)
-      ctx.stroke(path)
-    }
+    panelWinGradient.addColorStop(0, '#d77cc4')
+    panelWinGradient.addColorStop(0.5, '#d5d5d5')
+    panelWinGradient.addColorStop(0.6, '#c02ea1')
+    panelWinGradient.addColorStop(1, '#2a0c2a')
+    ctx.strokeStyle = '#d0aa39'
+    ctx.fillStyle = panelWinGradient
+    ctx.lineWidth = '7'
+    ctx.stroke()
+    ctx.fill()
+    ctx.restore()
 
-    function dotUpPlusBuild() {
-      const p = new Path2D()
-      p.moveTo(c.betPanelDotUpXL + (c.roundDots), c.betPanelDotUpYC)
-      p.lineTo(c.betPanelDotUpXR - c.roundDots, c.betPanelDotUpYC)
-      p.moveTo(c.betPanelDotUpXC, c.betPanelDotUpYC)
-      p.lineTo(c.betPanelDotUpXC, c.betPanelDotUpYT + c.roundDots * 4)
-      p.lineTo(c.betPanelDotUpXC, c.betPanelDotUpYB - c.roundDots * 4)
-      return p
-    }
+    // jewel
+    ctx.save();
+    ctx.translate(-9, 0);
+    ctx.beginPath()
+    ctx.moveTo(outShapeXL, outShapeYC)
+    ctx.quadraticCurveTo(outShapeXC, outShapeYC + liftCor * 2, outShapeXR, outShapeYC)
+    ctx.quadraticCurveTo(outShapeXC, outShapeYC - liftCor * 2, outShapeXL, outShapeYC)
+    const g = ctx.createLinearGradient(
+      outShapeXL, outShapeYB,
+      outShapeXR, outShapeYT
+    )
+    g.addColorStop(0, '#ba48be')
+    g.addColorStop(0.5, '#550d56')
+    ctx.strokeStyle = '#d0aa39'
+    ctx.fillStyle = '#550d56'
+    ctx.lineWidth = 1
+    ctx.fill()
+    ctx.stroke()
+    ctx.restore()
 
-    function dotUpPlusDraw(path: Path2D) {
-      ctx.strokeStyle = 'rgba(226,226,226,0.79)'
-      ctx.lineWidth = 3
-      ctx.stroke(path)
-    }
+    // outline
+    ctx.beginPath()
+    ctx.moveTo(olsXR, olsYT)
+    ctx.lineTo(olsXL, olsYC)
+    ctx.lineTo(olsXR, olsYB)
+    // ctx.lineTo(olsXR, olsYB)
+    ctx.strokeStyle = '#d0aa39'
+    ctx.lineWidth = '7'
+    // ctx.stroke()
+    // ctx.restore()
 
-    const upPath = dotUpBuild()
-    const downPath = dotDownBuild()
-    if (!upPath || !downPath) return
 
-    // buttonsRef.current = [
-    //   createButton(upPath, c.defaultColorTabDots, c.onHoverColorTabDots, () => setMoney(m => m + 10)),
-    //   createButton(downPath, c.defaultColorTabDots, c.onHoverColorTabDots, () => setMoney(m => m - 10)),
-    // ]
+  }, [])
 
-    if (!tabRef.current) {
-      return
-    }
+  useEffect(() => {
+    const tab = tabRef.current
+    const ctx = tab?.getContext('2d')
+
+    if (!tab || !ctx) return
+    const rect = tab.getBoundingClientRect()
+    const c = tabPanelCoord(rect.width, rect.height)
+    const dotDown = dotDownBuild(c)
+    const dotDownMinus = dotDownMinusBuild(c)
+    const dotUp = dotUpBuild(c)
+    const dotUpPlus = dotUpPlusBuild(c)
+    dotDownPath.current = dotDown
+    dotUpPath.current = dotUp
+    dotDownMinusPath.current = dotDownMinus
+    dotUpPlusPath.current = dotUpPlus
+    dotDownDraw(ctx, dotDown, c.defaultColorTabDots)
+    dotUpDraw(ctx, dotUp, c.defaultColorTabDots)
+    dotDownMinusDraw(ctx, dotDownMinus)
+    dotUpPlusDraw(ctx, dotUpPlus)
+
+
     const handleMouseMoveDots = (e: MouseEvent) => {
       if (!tabRef.current || !dotDownPath.current || !dotUpPath.current) {
         return
@@ -240,61 +262,62 @@ export default function Bonanza() {
       const btnDown = tabRef.current.getBoundingClientRect()
       const currX = e.clientX - btnDown.left
       const currY = e.clientY - btnDown.top
-      // const isDotDownHover = ctx.isPointInPath(dotDownPath.current, currX, currY)
-      // const isDotUpHover = ctx.isPointInPath(dotUpPath.current, currX, currY)
+      const isDotDownHover = ctx.isPointInPath(dotDownPath.current, currX, currY)
+      const isDotUpHover = ctx.isPointInPath(dotUpPath.current, currX, currY)
 
-      if (ctx.isPointInPath(dotDownPath.current, currX, currY)) {
-        dotDownDraw(dotDownPath.current, c.onHoverColorTabDots)
-        dotDownMinusDraw(dotDownMinus)
+      if (isDotDownHover) {
+        dotDownDraw(ctx, dotDownPath.current, c.onHoverColorTabDots)
+        dotDownMinusDraw(ctx, dotDownMinus)
 
       } else {
-        dotDownDraw(dotDownPath.current, c.defaultColorTabDots)
-        dotDownMinusDraw(dotDownMinus)
+        dotDownDraw(ctx, dotDownPath.current, c.defaultColorTabDots)
+        dotDownMinusDraw(ctx, dotDownMinus)
       }
-      if (ctx.isPointInPath(dotUpPath.current, currX, currY)) {
-        dotUpDraw(dotUpPath.current, c.onHoverColorTabDots)
-        dotUpPlusDraw(dotUpPlus)
+      if (isDotUpHover) {
+        dotUpDraw(ctx, dotUpPath.current, c.onHoverColorTabDots)
+        dotUpPlusDraw(ctx, dotUpPlus)
 
       } else {
-        dotUpDraw(dotUpPath.current, c.defaultColorTabDots)
-        dotUpPlusDraw(dotUpPlus)
+        dotUpDraw(ctx, dotUpPath.current, c.defaultColorTabDots)
+        dotUpPlusDraw(ctx, dotUpPlus)
       }
     }
 
     const handleClickDots = (e: MouseEvent) => {
-      if (!tabRef.current) {
+      const down = dotDownPath.current
+      const up = dotUpPath.current
+
+      if (!down || !up) {
         return
       }
-      const btnDown = tabRef.current.getBoundingClientRect()
+      const btnDown = tab.getBoundingClientRect()
       const currX = e.clientX - btnDown.left
       const currY = e.clientY - btnDown.top
-      const isDotDownActive = ctx.isPointInPath(dotDownPath.current, currX, currY)
-      const isDotUpActive = ctx.isPointInPath(dotUpPath.current, currX, currY)
+      const isDotDownActive = ctx.isPointInPath(down, currX, currY)
+      const isDotUpActive = ctx.isPointInPath(up, currX, currY)
 
       if (isDotDownActive) {
         money.current = money.current - 100
+        setRefresh(prev => !prev)
+
       }
       if (isDotUpActive) {
         money.current = money.current + 100
+        setRefresh(prev => !prev)
       }
       console.log(money.current)
     }
 
-    tabRef.current.addEventListener('click', handleClickDots)
-    tabRef.current.addEventListener('mousemove', handleMouseMoveDots)
+    tab.addEventListener('click', handleClickDots)
+    tab.addEventListener('mousemove', handleMouseMoveDots)
     return () => {
-      if (!tabRef.current) {
-        return
-      }
-      tabRef.current.removeEventListener('click', handleClickDots);
-      tabRef.current.removeEventListener('mousemove', handleMouseMoveDots)
+      tab.removeEventListener('click', handleClickDots);
+      tab.removeEventListener('mousemove', handleMouseMoveDots)
     }
-
-  }, [money.current])
-
+  }, []);
   useEffect(() => {
     return setupCanvas(tabRef.current, drawFn)
-  }, [])
+  }, [isRefresh])
 
   return (
     <div className='bonanza'>
